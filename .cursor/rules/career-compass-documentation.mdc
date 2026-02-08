@@ -1,0 +1,32 @@
+---
+description: Align with Career Compass features and requirements from project documentation
+alwaysApply: true
+---
+
+# Career Compass: Project Alignment
+
+This project is **Career Compass** — a web-based career guidance platform for university students (Holland Code/RIASEC aptitude test, recommendations, career explorer).
+
+## Single Source of Truth
+
+**Always use the project documentation** for features, requirements, and conventions:
+
+- **File:** `career_compass__all_documentation.md` (project root)
+
+**Before implementing or changing features, read or reference this doc** so work stays aligned with:
+
+- **Features & PRD:** F001–F010 (auth, Holland test, scoring, recommendations, career DB, explorer, detail view, persistence, responsive, career generation)
+- **Tech stack:** Next.js (App Router), React, Tailwind CSS, ShadCN, Supabase, Vercel
+- **Data model:** `profiles`, `career_tests`, `careers`, `saved_careers`; API routes and RLS as documented
+- **Recommendation logic:** RIASEC scoring (18 questions, 3 per dimension), top-2 match, `primary_riasec` alignment
+- **Design:** Primary Blue `#2563EB`, Accent Green `#10B981`, Inter font, mobile-first, WCAG AA, 200ms transitions
+- **User flows:** Onboarding → Test → Results → Explore; auth flows; career explorer search/filter
+
+## When to Reference the Doc
+
+- Adding or changing a feature → check PRD and feature list
+- Touching API routes, DB, or types → follow schema and endpoint specs
+- Styling or UI → follow Styling Guidelines and color/typography
+- Fixing bugs → ensure behavior matches described user flows and E2E scenarios
+
+Keep implementation consistent with `career_compass__all_documentation.md` unless the user explicitly requests a deviation.
