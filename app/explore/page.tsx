@@ -1,12 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Compass, Search, BookOpen, DollarSign, TrendingUp } from 'lucide-react';
+
+interface Career {
+  id: string;
+  title: string;
+  description: string;
+  primary_riasec: string;
+  secondary_riasec?: string;
+  required_skills: string[];
+  education_level: string;
+  salary_range: { min: number; max: number };
+  growth_outlook: string;
+}
 
 export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRIASEC, setSelectedRIASEC] = useState('');
+  const [allCareers, setAllCareers] = useState<Career[]>([]);
+  const [filteredCareers, setFilteredCareers] = useState<Career[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const RIASEC_TYPES = [
     { code: 'R', label: 'Realistic' },
@@ -17,22 +32,67 @@ export default function ExplorePage() {
     { code: 'C', label: 'Conventional' },
   ];
 
-  // Sample careers for demo
-  const careers = [
-    {
-      title: 'Software Developer',
-      description: 'Design and develop software applications',
-      riasec: 'I',
-      education: "Bachelor's Degree",
-      salary: '$70,000 - $130,000',
-      growth: 'Excellent'
-    },
-  ];
+  // Fetch all careers on mount
+  useEffect(() => {
+    const fetchCareers = async () => {
+      try {
+        const response = await fetch('/api/careers');
+        const data = await response.json();
+        
+        if (data.success) {
+          setAllCareers(data.careers);
+          setFilteredCareers(data.careers);
+        }
+      } catch (error) {
+        console.error('Error fetching careers:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCareers();
+  }, []);
+  // Filter careers when search or RIASEC changes
+  useEffect(() => {
+    let filtered = allCareers;
+
+    // Filter by RIASEC
+    if (selectedRIASEC) {
+      filtered = filtered.filter(
+        (career) =>
+          career.primary_riasec === selectedRIASEC ||
+          career.secondary_riasec === selectedRIASEC
+      );
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (career) =>
+          career.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          career.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredCareers(filtered);
+  }, [searchQuery, selectedRIASEC, allCareers]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading careers...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      <nav className="border-b bg-white">        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="border-b bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2">
               <Compass className="h-6 w-6 text-blue-600" />
@@ -57,8 +117,7 @@ export default function ExplorePage() {
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <Search className="h-5 w-5" />
             Search & Filter
-          </h2>
-          
+          </h2>          
           {/* Search */}
           <div className="mb-4">
             <input
@@ -67,7 +126,8 @@ export default function ExplorePage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-4 py-2 border rounded-md"
-            />          </div>
+            />
+          </div>
 
           {/* RIASEC Filter */}
           <div>
@@ -92,28 +152,49 @@ export default function ExplorePage() {
           </div>
         </div>
 
+        {/* Results Count */}
+        <div className="mb-4 text-gray-600">
+          Showing {filteredCareers.length} of {allCareers.length} careers
+        </div>
+
         {/* Career Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {careers.map((career, index) => (
-            <div key={index} className="bg-white rounded-lg border p-6">
-              <h3 className="text-xl font-semibold mb-2">{career.title}</h3>
-              <p className="text-gray-600 mb-4">{career.description}</p>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-gray-400" />
-                  <span>{career.education}</span>                </div>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-gray-400" />
-                  <span>{career.salary}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-gray-400" />
-                  <span>Growth: {career.growth}</span>
+        {filteredCareers.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600 text-lg">No careers found matching your criteria.</p>
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedRIASEC('');
+              }}
+              className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Clear Filters
+            </button>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCareers.map((career) => (
+              <div key={career.id} className="bg-white rounded-lg border p-6">
+                <h3 className="text-xl font-semibold mb-2">{career.title}</h3>
+                <p className="text-gray-600 mb-4">{career.description}</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-gray-400" />
+                    <span>{career.education_level}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-gray-400" />
+                    <span>${career.salary_range.min.toLocaleString()} - ${career.salary_range.max.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-gray-400" />
+                    <span>Growth: {career.growth_outlook}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

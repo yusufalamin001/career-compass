@@ -1,6 +1,7 @@
--- Insert 15 Diverse Careers into Supabase
--- Copy and paste this entire SQL into Supabase SQL Editor
+-- Step 1: Delete existing careers
+DELETE FROM public.careers;
 
+-- Step 2: Insert all 15 careers fresh
 INSERT INTO public.careers (id, title, description, primary_riasec, secondary_riasec, required_skills, education_level, salary_range, growth_outlook, work_environment, typical_tasks, created_at, updated_at) VALUES
 
 ('career_1', 'Software Developer', 'Design, develop, and maintain software applications and systems', 'I', 'R', 
@@ -23,7 +24,8 @@ INSERT INTO public.careers (id, title, description, primary_riasec, secondary_ri
 
 ('career_4', 'Graphic Designer', 'Create visual concepts to communicate ideas that inspire and inform', 'A', 'E',
  ARRAY['Adobe Creative Suite', 'Typography', 'Color Theory', 'Illustration', 'Branding'],
- 'Bachelor''s Degree', '{"min": 45000, "max": 75000}'::jsonb, 'Good', 'Office or Studio', ARRAY['Design logos', 'Create layouts', 'Edit images', 'Meet clients', 'Develop branding'],
+ 'Bachelor''s Degree', '{"min": 45000, "max": 75000}'::jsonb, 'Good',
+ 'Office or Studio', ARRAY['Design logos', 'Create layouts', 'Edit images', 'Meet clients', 'Develop branding'],
  NOW(), NOW()),
 
 ('career_5', 'Registered Nurse', 'Provide and coordinate patient care and educate about health conditions', 'S', 'C',
@@ -52,7 +54,8 @@ INSERT INTO public.careers (id, title, description, primary_riasec, secondary_ri
 
 ('career_9', 'Architect', 'Design buildings and structures that are functional, safe, and aesthetically pleasing', 'A', 'R',
  ARRAY['AutoCAD', 'Design', 'Building Codes', 'Project Management', '3D Modeling'],
- 'Master''s Degree', '{"min": 70000, "max": 120000}'::jsonb, 'Good', 'Office and Site', ARRAY['Design buildings', 'Create blueprints', 'Meet clients', 'Oversee construction', 'Review codes'],
+ 'Master''s Degree', '{"min": 70000, "max": 120000}'::jsonb, 'Good',
+ 'Office and Site', ARRAY['Design buildings', 'Create blueprints', 'Meet clients', 'Oversee construction', 'Review codes'],
  NOW(), NOW()),
 
 ('career_10', 'Physical Therapist', 'Help patients recover from injuries and improve movement', 'S', 'R',
@@ -81,7 +84,8 @@ INSERT INTO public.careers (id, title, description, primary_riasec, secondary_ri
 
 ('career_14', 'Accountant', 'Prepare and examine financial records for accuracy and compliance', 'C', 'I',
  ARRAY['Accounting Software', 'Tax Law', 'Attention to Detail', 'Excel', 'Financial Reporting'],
- 'Bachelor''s Degree', '{"min": 55000, "max": 85000}'::jsonb, 'Good', 'Office', ARRAY['Prepare tax returns', 'Audit records', 'Create reports', 'Ensure compliance', 'Advise clients'],
+ 'Bachelor''s Degree', '{"min": 55000, "max": 85000}'::jsonb, 'Good',
+ 'Office', ARRAY['Prepare tax returns', 'Audit records', 'Create reports', 'Ensure compliance', 'Advise clients'],
  NOW(), NOW()),
 
 ('career_15', 'Social Worker', 'Help people cope with challenges in their lives and connect them with resources', 'S', 'E',
@@ -90,5 +94,8 @@ INSERT INTO public.careers (id, title, description, primary_riasec, secondary_ri
  'Office or Community', ARRAY['Assess clients', 'Develop care plans', 'Connect resources', 'Advocate for clients', 'Maintain records'],
  NOW(), NOW());
 
--- Verify insert
+-- Step 3: Verify the insert
 SELECT COUNT(*) as total_careers FROM public.careers;
+
+-- Step 4: Show all careers
+SELECT id, title, primary_riasec, secondary_riasec FROM public.careers ORDER BY title;
