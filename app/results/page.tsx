@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Compass, BookOpen, DollarSign, TrendingUp } from 'lucide-react';
+import { Compass, BookOpen, DollarSign, TrendingUp, Briefcase } from 'lucide-react';
 
 interface RIASECScores {
   R: number;
@@ -23,6 +23,8 @@ interface Career {
   education_level: string;
   salary_range: { min: number; max: number };
   growth_outlook: string;
+  work_environment: string;
+  typical_tasks: string[];
 }
 
 export default function ResultsPage() {
@@ -30,15 +32,28 @@ export default function ResultsPage() {
   const [dominantTypes, setDominantTypes] = useState<string[]>([]);
   const [careers, setCareers] = useState<Career[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedCareer, setExpandedCareer] = useState<string | null>(null);
 
   const RIASEC_LABELS: Record<string, string> = {
     R: 'Realistic', I: 'Investigative', A: 'Artistic',
     S: 'Social', E: 'Enterprising', C: 'Conventional'
   };
+
+  // Convert USD to Naira
+  const formatSalaryNGN = (min: number, max: number) => {
+    const USD_TO_NGN = 1600;
+    const minNGN = min * USD_TO_NGN;
+    const maxNGN = max * USD_TO_NGN;
+    
+    const formatNumber = (num: number) => {
+      return new Intl.NumberFormat('en-NG').format(num);
+    };
+    
+    return `₦${formatNumber(minNGN)} - ₦${formatNumber(maxNGN)}`;
+  };
   useEffect(() => {
     const fetchResults = async () => {
       try {
-        // Fetch test results
         const testRes = await fetch('/api/test');
         const testData = await testRes.json();
         
@@ -46,7 +61,6 @@ export default function ResultsPage() {
           setScores(testData.result.riasec_scores);
           setDominantTypes(testData.result.dominant_types);
 
-          // Fetch matching careers
           const careersRes = await fetch(`/api/careers?riasec=${testData.result.dominant_types[0]}`);
           const careersData = await careersRes.json();
           
@@ -91,8 +105,8 @@ export default function ResultsPage() {
     );
   }
 
-  return (    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
+  return (
+    <div className="min-h-screen bg-gray-50">
       <nav className="border-b bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -109,14 +123,12 @@ export default function ResultsPage() {
         </div>
       </nav>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Your Career Assessment Results</h1>
           <p className="text-xl text-gray-600">Based on the Holland Code (RIASEC) model</p>
         </div>
 
-        {/* RIASEC Scores */}
         <div className="bg-white rounded-lg border p-6 mb-8">
           <h2 className="text-2xl font-semibold mb-4">Your Personality Profile</h2>
           <div className="space-y-4">
@@ -139,7 +151,6 @@ export default function ResultsPage() {
           </div>
         </div>
 
-        {/* Career Recommendations */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-4">Recommended Careers</h2>
           <p className="text-gray-600 mb-6">
@@ -150,27 +161,73 @@ export default function ResultsPage() {
             {careers.map((career) => (
               <div key={career.id} className="bg-white rounded-lg border p-6">
                 <h3 className="text-xl font-semibold mb-2">{career.title}</h3>
-                <p className="text-gray-600 mb-4">{career.description}</p>
-                <div className="space-y-2 text-sm">
+                <p className="text-gray-600 mb-4">{career.description}</p>                
+                <div className="space-y-2 text-sm mb-4">
                   <div className="flex items-center gap-2">
                     <BookOpen className="h-4 w-4 text-gray-400" />
                     <span>{career.education_level}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-gray-400" />
-                    <span>${career.salary_range.min.toLocaleString()} - ${career.salary_range.max.toLocaleString()}</span>
+                    <span>{formatSalaryNGN(career.salary_range.min, career.salary_range.max)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-gray-400" />
                     <span>Growth: {career.growth_outlook}</span>
                   </div>
                 </div>
+
+                {/* Expandable More Info */}
+                {expandedCareer === career.id ? (
+                  <div className="border-t pt-4 mt-4">
+                    <div className="mb-3">
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-1">
+                        <Briefcase className="h-4 w-4" />
+                        Required Skills
+                      </h4>
+                      <div className="flex flex-wrap gap-1">
+                        {career.required_skills.map((skill, idx) => (
+                          <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <h4 className="font-semibold text-sm mb-2">Work Environment</h4>
+                      <p className="text-sm text-gray-600">{career.work_environment}</p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold text-sm mb-2">Typical Tasks</h4>
+                      <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                        {career.typical_tasks.slice(0, 5).map((task, idx) => (
+                          <li key={idx}>{task}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <button
+                      onClick={() => setExpandedCareer(null)}
+                      className="mt-4 text-blue-600 text-sm hover:underline"
+                    >
+                      Show Less
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setExpandedCareer(career.id)}
+                    className="mt-2 text-blue-600 text-sm hover:underline"
+                  >
+                    View More Details
+                  </button>
+                )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex gap-4">
           <Link href="/test">
             <button className="px-6 py-2 border-2 border-gray-300 rounded-md hover:bg-gray-50">

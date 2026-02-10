@@ -29,7 +29,8 @@ export const RIASEC_DESCRIPTIONS: Record<RIASECType, string> = {
   I: 'Enjoys solving complex problems through research and analysis',
   A: 'Values creativity, self-expression, and artistic endeavors',
   S: 'Prefers helping, teaching, and working with people',
-  E: 'Enjoys leading, persuading, and business ventures',  C: 'Prefers organized, structured work with clear procedures',
+  E: 'Enjoys leading, persuading, and business ventures',
+  C: 'Prefers organized, structured work with clear procedures',
 };
 
 export function calculateDominantTypes(scores: RIASECScores): RIASECType[] {
@@ -39,15 +40,22 @@ export function calculateDominantTypes(scores: RIASECScores): RIASECType[] {
   return sortedTypes.slice(0, 3);
 }
 
+// Convert USD to Naira and format
 export function formatSalary(min: number, max: number): string {
+  // Approximate exchange rate: 1 USD = 1,600 NGN (adjust this as needed)
+  const USD_TO_NGN = 1600;
+  
+  const minNGN = min * USD_TO_NGN;
+  const maxNGN = max * USD_TO_NGN;
+  
   const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-NG', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'NGN',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(num);
   };
 
-  return `${formatNumber(min)} - ${formatNumber(max)}`;
+  return `${formatNumber(minNGN)} - ${formatNumber(maxNGN)}`;
 }

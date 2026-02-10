@@ -18,55 +18,68 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
+  try {
+    const supabase = createServerClient(
+      supabaseUrl,
+      supabaseKey,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value)
+            );
+            response = NextResponse.next({
+              request,
+            });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options)
+            );
+          },
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          response = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
-        },
-      },
+      }
+    );
+
+    // Refresh session if expired - required for Server Components
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    // If there's an auth error, log it but continue
+    if (error) {
+      console.warn('Auth error in middleware:', error.message);
     }
-  );
-  // Refresh session if expired - required for Server Components
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  // Protected routes
-  const protectedPaths = ['/dashboard', '/test', '/results'];
-  const isProtectedPath = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  );
+    // Protected routes
+    const protectedPaths = ['/dashboard', '/test', '/results'];
+    const isProtectedPath = protectedPaths.some((path) =>
+      request.nextUrl.pathname.startsWith(path)
+    );
 
-  // Redirect to auth if accessing protected route without authentication
-  if (isProtectedPath && !user) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/auth';
-    redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
+    // Redirect to auth if accessing protected route without authentication
+    if (isProtectedPath && !user) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = '/auth';
+      redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Redirect to dashboard if accessing auth page while authenticated
+    if (request.nextUrl.pathname === '/auth' && user) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = '/dashboard';
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    return response;
+  } catch (error) {
+    // If middleware fails, just allow the request through
+    console.error('Middleware error:', error);
+    return NextResponse.next();
   }
-
-  // Redirect to dashboard if accessing auth page while authenticated
-  if (request.nextUrl.pathname === '/auth' && user) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/dashboard';
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  return response;
 }
 
 export const config = {

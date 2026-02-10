@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Compass, Search, BookOpen, DollarSign, TrendingUp } from 'lucide-react';
+import { Compass, Search, BookOpen, DollarSign, TrendingUp, Briefcase, MapPin } from 'lucide-react';
 
 interface Career {
   id: string;
@@ -14,6 +14,8 @@ interface Career {
   education_level: string;
   salary_range: { min: number; max: number };
   growth_outlook: string;
+  work_environment: string;
+  typical_tasks: string[];
 }
 
 export default function ExplorePage() {
@@ -22,6 +24,7 @@ export default function ExplorePage() {
   const [allCareers, setAllCareers] = useState<Career[]>([]);
   const [filteredCareers, setFilteredCareers] = useState<Career[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedCareer, setExpandedCareer] = useState<string | null>(null);
 
   const RIASEC_TYPES = [
     { code: 'R', label: 'Realistic' },
@@ -32,6 +35,18 @@ export default function ExplorePage() {
     { code: 'C', label: 'Conventional' },
   ];
 
+  // Convert USD to Naira
+  const formatSalaryNGN = (min: number, max: number) => {
+    const USD_TO_NGN = 1600; // Exchange rate
+    const minNGN = min * USD_TO_NGN;
+    const maxNGN = max * USD_TO_NGN;
+    
+    const formatNumber = (num: number) => {
+      return new Intl.NumberFormat('en-NG').format(num);
+    };
+    
+    return `₦${formatNumber(minNGN)} - ₦${formatNumber(maxNGN)}`;
+  };
   // Fetch all careers on mount
   useEffect(() => {
     const fetchCareers = async () => {
@@ -52,11 +67,11 @@ export default function ExplorePage() {
 
     fetchCareers();
   }, []);
+
   // Filter careers when search or RIASEC changes
   useEffect(() => {
     let filtered = allCareers;
 
-    // Filter by RIASEC
     if (selectedRIASEC) {
       filtered = filtered.filter(
         (career) =>
@@ -65,7 +80,6 @@ export default function ExplorePage() {
       );
     }
 
-    // Filter by search query
     if (searchQuery) {
       filtered = filtered.filter(
         (career) =>
@@ -118,7 +132,6 @@ export default function ExplorePage() {
             <Search className="h-5 w-5" />
             Search & Filter
           </h2>          
-          {/* Search */}
           <div className="mb-4">
             <input
               type="text"
@@ -129,7 +142,6 @@ export default function ExplorePage() {
             />
           </div>
 
-          {/* RIASEC Filter */}
           <div>
             <label className="block text-sm font-medium mb-2">Filter by Personality Type</label>
             <div className="flex flex-wrap gap-2">
@@ -152,12 +164,10 @@ export default function ExplorePage() {
           </div>
         </div>
 
-        {/* Results Count */}
         <div className="mb-4 text-gray-600">
           Showing {filteredCareers.length} of {allCareers.length} careers
         </div>
 
-        {/* Career Grid */}
         {filteredCareers.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600 text-lg">No careers found matching your criteria.</p>
@@ -176,21 +186,67 @@ export default function ExplorePage() {
             {filteredCareers.map((career) => (
               <div key={career.id} className="bg-white rounded-lg border p-6">
                 <h3 className="text-xl font-semibold mb-2">{career.title}</h3>
-                <p className="text-gray-600 mb-4">{career.description}</p>
-                <div className="space-y-2 text-sm">
+                <p className="text-gray-600 mb-4 line-clamp-2">{career.description}</p>                
+                <div className="space-y-2 text-sm mb-4">
                   <div className="flex items-center gap-2">
                     <BookOpen className="h-4 w-4 text-gray-400" />
                     <span>{career.education_level}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-gray-400" />
-                    <span>${career.salary_range.min.toLocaleString()} - ${career.salary_range.max.toLocaleString()}</span>
+                    <span>{formatSalaryNGN(career.salary_range.min, career.salary_range.max)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-gray-400" />
                     <span>Growth: {career.growth_outlook}</span>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-gray-400" />
+                    <span>{career.work_environment}</span>
+                  </div>
                 </div>
+
+                {/* Expandable Section for More Info */}
+                {expandedCareer === career.id ? (
+                  <div className="border-t pt-4 mt-4">
+                    <div className="mb-3">
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-1">
+                        <Briefcase className="h-4 w-4" />
+                        Required Skills
+                      </h4>
+                      <div className="flex flex-wrap gap-1">
+                        {career.required_skills.map((skill, idx) => (
+                          <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-sm mb-2">Typical Tasks</h4>
+                      <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                        {career.typical_tasks.slice(0, 5).map((task, idx) => (
+                          <li key={idx}>{task}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <button
+                      onClick={() => setExpandedCareer(null)}
+                      className="mt-4 text-blue-600 text-sm hover:underline"
+                    >
+                      Show Less
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setExpandedCareer(career.id)}
+                    className="mt-2 text-blue-600 text-sm hover:underline"
+                  >
+                    View More Details
+                  </button>
+                )}
               </div>
             ))}
           </div>
