@@ -39,17 +39,18 @@ export default function ResultsPage() {
     S: 'Social', E: 'Enterprising', C: 'Conventional'
   };
 
-  // Convert USD to Naira
+  // Format salary in Naira (values already in Naira in database)
   const formatSalaryNGN = (min: number, max: number) => {
-    const USD_TO_NGN = 1600;
-    const minNGN = min * USD_TO_NGN;
-    const maxNGN = max * USD_TO_NGN;
+    // Convert to millions for better readability
+    const minM = min / 1000000;
+    const maxM = max / 1000000;
     
     const formatNumber = (num: number) => {
-      return new Intl.NumberFormat('en-NG').format(num);
+      // Show one decimal place if not a whole number
+      return num % 1 === 0 ? num.toFixed(0) : num.toFixed(1);
     };
     
-    return `₦${formatNumber(minNGN)} - ₦${formatNumber(maxNGN)}`;
+    return `₦${formatNumber(minM)}M - ₦${formatNumber(maxM)}M/year`;
   };
   useEffect(() => {
     const fetchResults = async () => {
