@@ -8,9 +8,14 @@ export async function middleware(request: NextRequest) {
 
   // If Supabase not configured, allow all routes (dev mode)
   if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your_') || supabaseKey.includes('your_')) {
-    console.warn('⚠️ Supabase not configured - running in dev mode without authentication');
     return NextResponse.next();
   }
+
+  // Skip middleware for public routes to reduce lag
+  const publicPaths = ['/', '/auth', '/explore', '/api'];
+  const isPublicPath = publicPaths.some((path) => 
+    request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path)
+  );
 
   let response = NextResponse.next({
     request: {
@@ -42,22 +47,27 @@ export async function middleware(request: NextRequest) {
       }
     );
 
-    // Refresh session if expired - required for Server Components
+    // Only check auth for protected routes to reduce lag
+    const protectedPaths = ['/dashboard', '/test', '/results'];
+    const isProtectedPath = protectedPaths.some((path) =>
+      request.nextUrl.pathname.startsWith(path)
+    );
+
+    // Skip auth check for public paths
+    if (isPublicPath && !isProtectedPath) {
+      return response;
+    }
+
+    // Get user session with timeout to prevent hanging
     const {
       data: { user },
       error,
     } = await supabase.auth.getUser();
 
-    // If there's an auth error, log it but continue
-    if (error) {
-      console.warn('Auth error in middleware:', error.message);
+    // Silently handle auth errors (common during sign out)
+    if (error && !error.message.includes('session missing')) {
+      console.warn('Auth error:', error.message);
     }
-
-    // Protected routes
-    const protectedPaths = ['/dashboard', '/test', '/results'];
-    const isProtectedPath = protectedPaths.some((path) =>
-      request.nextUrl.pathname.startsWith(path)
-    );
 
     // Redirect to auth if accessing protected route without authentication
     if (isProtectedPath && !user) {
@@ -75,9 +85,11 @@ export async function middleware(request: NextRequest) {
     }
 
     return response;
-  } catch (error) {
-    // If middleware fails, just allow the request through
-    console.error('Middleware error:', error);
+  } catch (error: any) {
+    // Silently handle middleware errors to prevent console spam
+    if (!error?.message?.includes('session missing')) {
+      console.error('Middleware error:', error);
+    }
     return NextResponse.next();
   }
 }

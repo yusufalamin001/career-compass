@@ -1,9 +1,50 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Compass, Target, TrendingUp, LogOut } from 'lucide-react';
+import { Compass, Target, TrendingUp, LogOut, User } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const supabase = createClient();
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email || '');
+      } else {
+        router.push('/auth');
+      }
+      setLoading(false);
+    };
+
+    checkUser();
+  }, [router, supabase.auth]);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    
+    // Immediately redirect for instant feel
+    router.push('/');
+    
+    // Sign out in background
+    await supabase.auth.signOut();
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
@@ -15,21 +56,28 @@ export default function DashboardPage() {
               <span className="text-xl font-bold">Career Compass</span>
             </Link>
             <div className="flex items-center space-x-4">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <User className="h-4 w-4" />
+                <span>{userEmail}</span>
+              </div>
               <Link href="/explore">
                 <button className="px-4 py-2 text-gray-700 hover:text-gray-900">
                   Explore Careers
                 </button>
               </Link>
-              <Link href="/">
-                <button className="px-4 py-2 text-gray-700 hover:text-gray-900 flex items-center gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </button>
-              </Link>
+              <button
+                onClick={handleSignOut}
+                disabled={signingOut}
+                className="px-4 py-2 text-red-600 hover:text-red-700 flex items-center gap-2 disabled:opacity-50"
+              >
+                <LogOut className="h-4 w-4" />
+                {signingOut ? 'Signing Out...' : 'Sign Out'}
+              </button>
             </div>
           </div>
         </div>
       </nav>
+
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-8">
@@ -59,7 +107,8 @@ export default function DashboardPage() {
             <p className="text-gray-600 mb-4">
               See your personalized career recommendations based on your assessment.
             </p>
-            <Link href="/results">              <button className="w-full py-2 border-2 border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">
+            <Link href="/results">
+              <button className="w-full py-2 border-2 border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">
                 View Results
               </button>
             </Link>
